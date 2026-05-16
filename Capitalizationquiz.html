@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESL Capitalization Quiz</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --correct: #10b981;
+            --incorrect: #ef4444;
+            --accent: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 40px auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            font-size: 24px;
+            color: var(--primary);
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 16px;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .input-group {
+            margin: 25px 0;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .option-card {
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            padding: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .option-card:hover:not(.disabled) {
+            border-color: var(--primary);
+            background-color: #eef2ff;
+        }
+
+        .option-card.correct {
+            background-color: #d1fae5;
+            border-color: var(--correct);
+            color: #065f46;
+        }
+
+        .option-card.incorrect {
+            background-color: #fee2e2;
+            border-color: var(--incorrect);
+            color: #991b1b;
+        }
+
+        .option-card.disabled {
+            cursor: not-allowed;
+        }
+
+        .hint-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-weight: 600;
+            cursor: pointer;
+            margin: 15px 0 5px 0;
+            display: inline-flex;
+            align-items: center;
+            font-size: 15px;
+        }
+
+        .hint-text {
+            display: none;
+            background-color: #fffbeb;
+            border: 1px solid #fef3c7;
+            padding: 12px;
+            border-radius: 8px;
+            color: #92400e;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .status-message {
+            margin-top: 15px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Capitalization Quiz (A2-B1)</h1>
+
+        <div id="view-welcome" class="view active">
+            <div class="input-group">
+                <label for="student-name">Enter Your Name to Start:</label>
+                <input type="text" id="student-name" placeholder="First and Last Name">
+            </div>
+            <button class="btn" onclick="startQuiz()">Start Quiz</button>
+        </div>
+
+        <div id="view-quiz" class="view">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; color: var(--text-muted); font-weight:600;">
+                <span id="question-counter">Question 1 of 20</span>
+                <span id="score-counter">Score: 0</span>
+            </div>
+            <div id="question-text" style="font-size: 18px; font-weight: 600;"></div>
+            
+            <button class="hint-btn" onclick="toggleHint()">💡 Need a hint?</button>
+            <div id="hint-text" class="hint-text"></div>
+
+            <div id="options-container" class="options-grid"></div>
+            <button class="btn" id="next-btn" onclick="nextQuestion()" disabled style="opacity: 0.5; float: right;">Next Question</button>
+            <div style="clear: both;"></div>
+        </div>
+
+        <div id="view-results" class="view">
+            <h2>Quiz Completed!</h2>
+            <div style="font-size: 48px; font-weight: 800; color: var(--primary); margin: 20px 0;" id="results-score-display">0/20</div>
+            <div id="submission-status" class="status-message">Submitting your score to the teacher... Please wait...</div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyYSgt_dgOGWCMm-o6HdBYqfjWoh4QeNwPg6ErYPFHxneUF8cmLxWkzInQHVq6I0lCUbQ/exec";
+
+        const quizQuestions = [
+            { q: "Which sentence uses correct capitalization?", opts: ["yesterday, my friend and i went to the zoo.", "Yesterday, my friend and I went to the zoo.", "Yesterday, my friend and i went to the Zoo.", "yesterday, my friend and I went to the zoo."], correct: 1, hint: "Look closely at the very first word of the sentence and how the pronoun for yourself is written." },
+            { q: "Choose the sentence with the correct capitalization of languages.", opts: ["He is fluent in German and French.", "He is fluent in German and french.", "He is fluent in german and French.", "He is fluent in german and french."], correct: 0, hint: "Languages and nationalities are proper nouns and always require a capital letter." },
+            { q: "Which sentence is written correctly?", opts: ["We always go to the beach in Summer.", "We always go to the beach in summer.", "We always go to the Beach in summer.", "We always go to the beach in Autumn."], correct: 1, hint: "Unlike months and days of the week, seasons of the year are common nouns." },
+            { q: "Identify the correct sentence regarding days and months.", opts: ["The exam is on Tuesday, October 5th.", "The exam is on tuesday, October 5th.", "The exam is on Tuesday, october 5th.", "The exam is on tuesday, october 5th."], correct: 0, hint: "Both days of the week and months of the year are proper nouns." },
+            { q: "Fill in the blank with the correctly capitalized words: 'I need to call ________.'", opts: ["my Doctor, dr. Jones", "my Doctor, Dr. jones", "my doctor, Dr. Jones", "my doctor, dr. jones"], correct: 2, hint: "General job titles are not capitalized, but specific titles combined with a person's name are." },
+            { q: "Which of the following sentences correctly capitalizes family titles?", opts: ["I asked my Grandmother for her secret recipe.", "I asked grandmother for her secret recipe.", "I asked my grandmother for Her secret recipe.", "I asked Grandmother for her secret recipe."], correct: 3, hint: "Capitalize family words like 'Grandmother' or 'Mom' only when they are used as a direct name without words like 'my' or 'the'." },
+            { q: "Choose the correct sentence.", opts: ["We visited the Eiffel Tower while we were in Paris.", "We visited the Eiffel tower while we were in paris.", "We visited the eiffel tower while we were in Paris.", "We visited the Eiffel Tower while we were in paris."], correct: 0, hint: "Famous monuments and the cities they are in are both specific proper nouns." },
+            { q: "Which sentence handles the name of a school subject correctly?", opts: ["This term, I am taking History, Math, and English.", "This term, I am taking history, math, and English.", "This term, I am taking history, math, and english.", "This term, I am taking History, Math, and english."], correct: 1, hint: "School subjects are only capitalized if they are the name of a language or a specific course title with a number." },
+            { q: "Choose the sentence with the correct capitalization.", opts: ["The Nile river is the longest river in Africa.", "The nile river is the longest River in Africa.", "The Nile River is the longest river in Africa.", "The Nile River is the longest river in africa."], correct: 2, hint: "When a word like 'River' or 'Ocean' is part of a specific geographic name, it becomes part of the proper noun." },
+            { q: "Identify the correct sentence regarding holidays.", opts: ["Are you doing anything special for New year's day?", "Are you doing anything special for new year's day?", "Are you doing anything special for New Year's day?", "Are you doing anything special for New Year's Day."], correct: 3, hint: "Official holidays are proper nouns, so every major word in the holiday's name should be capitalized." },
+            { q: "Which sentence is capitalized correctly?", opts: ["My uncle lives in Canada.", "My Uncle lives in Canada.", "My uncle lives in canada.", "My Uncle lives in canada."], correct: 0, hint: "Think about whether 'uncle' is being used as a direct name or just a general relationship word after 'my'." },
+            { q: "Choose the correct sentence.", opts: ["We read a book about president Abraham Lincoln.", "We read a book about President Abraham Lincoln.", "We read a book about President abraham lincoln.", "We read a book about president abraham Lincoln."], correct: 1, hint: "Official titles are capitalized when they directly precede a person's name." },
+            { q: "Which sentence uses correct capitalization for directions and streets?", opts: ["To get to the museum, drive North on Main Street.", "To get to the museum, drive north on main street.", "To get to the museum, drive north on Main Street.", "To get to the museum, drive North on main Street."], correct: 2, hint: "Compass directions (north, south, east, west) are not capitalized when giving directions, but specific street names are." },
+            { q: "Which of the following sentences is correct?", opts: ["I love eating italian food at the restaurant.", "I love eating Italian Food at the restaurant.", "I love eating Italian food at the Restaurant.", "I love eating Italian food at the restaurant."], correct: 3, hint: "Adjectives derived from countries (like Italian, Spanish, Japanese) must always remain capitalized, but the common nouns they describe do not." },
+            { q: "Choose the correctly capitalized title of a book.", opts: ["Alice in Wonderland", "Alice In Wonderland", "alice in wonderland", "Alice in wonderland."], correct: 0, hint: "In titles, capitalize the first and last words, and all principal words (nouns, verbs, adjectives), but keep short prepositions and articles lowercase." },
+            { q: "Which sentence is correct?", opts: ["She bought a new Toyota car on wednesday.", "She bought a new Toyota car on Wednesday.", "She bought a new toyota car on Wednesday.", "She bought a new toyota car on wednesday."], correct: 1, hint: "Brand names and days of the week are both proper nouns." },
+            { q: "Identify the correct sentence.", opts: ["The Professor told us that the test was canceled.", "The Professor told us that the Test was canceled.", "The professor told us that the test was canceled.", "The professor told us that the Test was canceled."], correct: 2, hint: "Job titles like 'professor' are common nouns unless they are used directly as a title before a person's name (e.g., Professor Green)." },
+            { q: "Which sentence is correct?", opts: ["We crossed the Golden Gate bridge.", "We crossed the golden gate bridge.", "We crossed the Golden gate Bridge.", "We crossed the Golden Gate Bridge."], correct: 3, hint: "Specific names of bridges, buildings, and landmarks are proper nouns, meaning every major word needs a capital letter." },
+            { q: "Choose the correctly capitalized sentence.", opts: ["The ship crossed the Pacific Ocean.", "The ship crossed the Pacific ocean.", "The ship crossed the pacific ocean.", "The ship crossed the pacific Ocean."], correct: 0, hint: "Specific names of oceans, seas, and lakes require all parts of the name to be capitalized." },
+            { q: "Which sentence is written correctly?", opts: ["My favorite Holiday is Thanksgiving.", "My favorite holiday is Thanksgiving.", "My favorite holiday is thanksgiving.", "My Favorite holiday is Thanksgiving."], correct: 1, hint: "Capitalize specific names of holidays, but keep general words like 'favorite' or 'holiday' lowercase." }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let studentName = "";
+        let selectedOptionIndex = null;
+
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(`view-${viewId}`).classList.add('active');
+        }
+
+        function startQuiz() {
+            const name = document.getElementById('student-name').value.trim();
+            if(!name) return alert("Please enter your name.");
+            studentName = name;
+            currentQuestionIndex = 0;
+            score = 0;
+            showView('quiz');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            selectedOptionIndex = null;
+            const qData = quizQuestions[currentQuestionIndex];
+            document.getElementById('question-counter').innerText = `Question ${currentQuestionIndex + 1} of ${quizQuestions.length}`;
+            document.getElementById('score-counter').innerText = `Score: ${score}`;
+            document.getElementById('question-text').innerText = qData.q;
+            
+            document.getElementById('hint-text').style.display = 'none';
+            document.getElementById('hint-text').innerText = qData.hint || "No hint available.";
+
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.disabled = true;
+            nextBtn.style.opacity = 0.5;
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            qData.opts.forEach((optText, index) => {
+                const card = document.createElement('div');
+                card.className = 'option-card';
+                card.innerText = optText;
+                card.onclick = () => selectOption(index);
+                container.appendChild(card);
+            });
+        }
+
+        function toggleHint() {
+            const hint = document.getElementById('hint-text');
+            hint.style.display = hint.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function selectOption(index) {
+            if (selectedOptionIndex !== null) return;
+            selectedOptionIndex = index;
+            
+            const qData = quizQuestions[currentQuestionIndex];
+            const cards = document.querySelectorAll('.option-card');
+            
+            cards.forEach((card, idx) => {
+                card.classList.add('disabled');
+                if(idx === qData.correct) card.classList.add('correct');
+            });
+
+            if (index === qData.correct) {
+                score++;
+            } else {
+                cards[index].classList.add('incorrect');
+            }
+
+            document.getElementById('score-counter').innerText = `Score: ${score}`;
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.disabled = false;
+            nextBtn.style.opacity = 1;
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if(currentQuestionIndex < quizQuestions.length) {
+                loadQuestion();
+            } else {
+                showView('results');
+                document.getElementById('results-score-display').innerText = `${score} / ${quizQuestions.length}`;
+                sendDataToGoogleSheets();
+            }
+        }
+
+        function sendDataToGoogleSheets() {
+            const statusDiv = document.getElementById('submission-status');
+            
+            if (!GOOGLE_WEB_APP_URL || GOOGLE_WEB_APP_URL.includes("YOUR_GOOGLE_WEB_APP_URL_HERE")) {
+                statusDiv.innerText = "ℹ️ Quiz finished! (Google Sheets link not configured yet).";
+                statusDiv.style.color = "var(--text-muted)";
+                return;
+            }
+
+            const payload = {
+                name: studentName,
+                score: score,
+                total: quizQuestions.length
+            };
+
+            try {
+                fetch(GOOGLE_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify(payload)
+                })
+                .then(() => {
+                    statusDiv.innerText = "✅ Score submitted successfully! You may close this page.";
+                    statusDiv.style.color = "var(--correct)";
+                })
+                .catch((error) => {
+                    statusDiv.innerText = "❌ Error submitting score online. Please notify your teacher.";
+                    statusDiv.style.color = "var(--incorrect)";
+                    console.error(error);
+                });
+            } catch (e) {
+                statusDiv.innerText = "❌ Network connection format error.";
+                statusDiv.style.color = "var(--incorrect)";
+            }
+        }
+    </script>
+</body>
+</html>
